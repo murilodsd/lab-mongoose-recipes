@@ -1,23 +1,58 @@
-const mongoose = require('mongoose');
+import * as dotenv from "dotenv";
+import connect from "./config/db.config.js";
+import mongoose from "mongoose";
 
 // Import of the model Recipe from './models/Recipe.model.js'
-const Recipe = require('./models/Recipe.model');
+import RecipeModel from "./models/Recipe.model.js";
 // Import of the data from './data.json'
-const data = require('./data');
+// import data from './data.json';
+import recipesData from "./data.json" assert { type: "json" };
 
-const MONGODB_URI = 'mongodb://localhost:27017/recipe-app';
+const firstRecipe = {
+  title: "PopCorn",
+  level: "UltraPro Chef",
+  ingredients: [
+    "1/2 cup oil",
+    "3 cups of Premium PopCorn Corn"
+  ],
+  cuisine: "Good",
+  dishType: "main_course",
+  duration: 10,
+  creator: "Chef Ignacio",
+};
 
-// Connection to the database "recipe-app"
-mongoose
-  .connect(MONGODB_URI)
-  .then(x => {
-    console.log(`Connected to the database: "${x.connection.name}"`);
+dotenv.config();
+start();
+
+async function start() {
+  try {
+    await connect();
+
     // Before adding any recipes to the database, let's remove all existing ones
-    return Recipe.deleteMany()
-  })
-  .then(() => {
-    // Run your code here, after you have insured that the connection was made
-  })
-  .catch(error => {
-    console.error('Error connecting to the database', error);
-  });
+    await RecipeModel.deleteMany();
+
+    //Iteration 2 - Create a recipe
+    const create = await RecipeModel.create(firstRecipe);
+
+    console.log(create.title)
+
+    //Iteration 3 - Insert multiple recipes
+    const createRecipes = await RecipeModel.insertMany(recipesData)
+    createRecipes.forEach(recipe => console.log(recipe.title))
+
+   //Iteration 4 - Update recipe
+    await RecipeModel.findOneAndUpdate({title: 'Rigatoni alla Genovese'}, {duration:101},{ new: true, runValidators: true});
+    console.log('Rigatoni alla Genovese duration updated');
+
+    //Iteration 5 - Remove a recipe
+    await RecipeModel.deleteOne({title: 'Carrot Cake'});
+    console.log('Carrot Cake deleted')
+
+    //Iteration 6 - Close the Database
+    await mongoose.disconnect();
+
+
+  } catch (e) {
+    console.log(e);
+  }
+};
